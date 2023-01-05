@@ -4,7 +4,7 @@
         die("Must be run from command line\n");
     }
 
-    require_once __DIR__ . "/SocketClient.php";
+    require_once __DIR__ . "/src/SocketClient.php";
 
     // Require 3 to 4 arguments
     if ($argc < 4 || $argc > 4) {
