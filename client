@@ -1,0 +1,28 @@
+<?php
+
+    if (php_sapi_name() !== "cli") {
+        die("Must be run from command line\n");
+    }
+
+    require_once __DIR__ . "/SocketClient.php";
+
+    // Require 3 to 4 arguments
+    if ($argc < 4 || $argc > 4) {
+        $arglen = $argc - 1;
+        exit("Expected 3 to 4 arguments (got ${arglen}): <reflect_socket_path> <endpoint> <http_method> [payload]\n");
+    }
+
+    // Connect to the socket server
+    $client = new SocketClient($argv[1]);
+
+    // Get endpoint, method, and optional payload
+    $args = $argv;
+    array_shift($args);
+    array_shift($args);
+
+    // Restore enum from argument
+    $args[1] = Method::from(strtoupper($args[1]));
+
+    // Call endpoint and echo result
+    $call = $client->call(...$args);
+    echo json_encode($call) . "\n";
