@@ -1,5 +1,7 @@
 <?php
 
+    namespace Reflect;
+
     // Allowed HTTP verbs
     enum Method: string {
         case GET     = "GET";
