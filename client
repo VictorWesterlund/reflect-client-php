@@ -4,7 +4,7 @@
         die("Must be run from command line\n");
     }
 
-    require_once __DIR__ . "/src/SocketClient.php";
+    require_once __DIR__ . "/src/Client.php";
 
     // Require 3 to 4 arguments
     if ($argc < 4 || $argc > 4) {
@@ -13,7 +13,7 @@
     }
 
     // Connect to the socket server
-    $client = new SocketClient($argv[1]);
+    $client = new Client($argv[1], ConType::AF_UNIX);
 
     // Get endpoint, method, and optional payload
     $args = $argv;

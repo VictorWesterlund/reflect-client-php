@@ -1,15 +1,15 @@
-# Reflect API UNIX socket client for PHP
+# Reflect API client for PHP
 
-Make requests to endpoints created with the [Reflect API framework](https://github.com/victorwesterlund/reflect) running the same machine.
+Make requests to an API built using the Reflect API framework over HTTP or UNIX sockets. This program comes with both an extendable/instantiable class that you can integrate with existing PHP code, or as a stand-alone CLI which can be piped into other programs.
 
 ---
 
-Make a request with `SocketClient->call()`. It will return the response as an array of length 2.
+Make a request with `Client->call()`. It will return the response as an array of length 2.
 - The first value is the HTTP-equivalent response code.
 - The second value is the response body
 
 ```php
-$client = new Reflect\SocketClient("/path/to/socket");
+$client = new Reflect\Client("<API URL or path to UNIX socket>");
 
 $client->call("foo", Method::GET); // (array) [200, "bar"]
 $client->call("foo", Method::POST, [
@@ -26,7 +26,7 @@ Requires PHP 8.1 or newer, and of course an instance of the [Reflect socket serv
 1. **Install with composer**
 
    ```
-   composer require reflect/socket-server
+   composer require reflect/client
    ```
    
 2. **Initialize the class**
@@ -34,7 +34,7 @@ Requires PHP 8.1 or newer, and of course an instance of the [Reflect socket serv
    ```php
    require_once "/vendor/autoload.php";
    
-   $client = new Reflect\SocketClient("/path/to/socket");
+   $client = new Reflect\Client("<API URL or path to UNIX socket>");
    ```
    
 3. **Make API request**
@@ -66,7 +66,7 @@ You can also run this from the command line with
 php client <socket_file> <endpoint> <http_method> [payload]
 ```
 
-and it will return a serialized JSON array with the same structure as described in the `SocketClient->call()` return.
+and it will return a serialized JSON array with the same structure as described in the `Client->call()` return.
 
 *Example*
 ```sh
@@ -80,12 +80,12 @@ Requires PHP CLI 8.1 or greater, and of course an instance of the [Reflect socke
 1. **Clone repo**
 
    ```
-   git clone https://github.com/victorwesterlund/reflect-socket-client-php
+   git clone https://github.com/victorwesterlund/reflect-client-php
    ```
    
 2. **Run from command line**
 
    ```
-   cd reflect-socket-client-php
+   cd reflect-client-php
    php client <socket_file> <endpoint> <http_method> [payload]
    ```
