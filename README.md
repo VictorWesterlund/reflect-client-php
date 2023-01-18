@@ -4,7 +4,7 @@ Make requests to an API built using the Reflect API framework over HTTP or UNIX 
 
 ---
 
-Make a request with `SocketClient->call()`. It will return the response as an array of length 2.
+Make a request with `Client->call()`. It will return the response as an array of length 2.
 - The first value is the HTTP-equivalent response code.
 - The second value is the response body
 
