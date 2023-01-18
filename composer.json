@@ -1,6 +1,6 @@
 {
-    "name": "reflect/socket-client",
-    "description": "Extendable PHP interface for communicating with Reflect API over UNIX sockets",
+    "name": "reflect/client",
+    "description": "Extendable PHP interface for communicating with Reflect API over HTTP or UNIX sockets",
     "type": "library",
     "license": "GPL-2.0-only",
     "authors": [
