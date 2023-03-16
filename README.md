@@ -1,10 +1,10 @@
 # Reflect API client for PHP
 
-Make requests to an API built using the Reflect API framework over HTTP or UNIX sockets. This program comes with both an extendable/instantiable class that you can integrate with existing PHP code, or as a stand-alone CLI which can be piped into other programs.
+Make requests to an API built using the [Reflect API](https://github.com/VictorWesterlund/reflect) framework over HTTP or UNIX sockets. This program comes with both an extendable/instantiable class that you can integrate with existing PHP code, or as a stand-alone CLI which can be run by itself or UNIX piped into other programs.
 
 ---
 
-Make a request with `Client->call()`. It will return the response as an array of length 2.
+Make a request with `Client->call()`. It will always return the response as an array of length 2.
 - The first value is the HTTP-equivalent response code.
 - The second value is the response body
 
@@ -21,7 +21,7 @@ $client->call("foo", Method::POST, [
 
 ## How to use
 
-Requires PHP 8.1 or newer, and of course an instance of the [Reflect socket server](https://github.com/VictorWesterlund/reflect/wiki/UNIX-Sockets) running on the same machine.
+Requires PHP 8.1 or newer, and of course a Reflect API endpoint.
 
 1. **Install with composer**
 
@@ -75,7 +75,7 @@ php client "/run/reflect.sock" "foo?bar=biz" "POST" "[\"foo\" => \"bar\"]" # (st
 
 ---
 
-Requires PHP CLI 8.1 or greater, and of course an instance of the [Reflect socket server](https://github.com/VictorWesterlund/reflect/wiki/UNIX-Sockets) running on the same machine.
+Requires PHP CLI 8.1 or greater, and of course a Reflect API endpoint.
 
 1. **Clone repo**
 
@@ -87,5 +87,5 @@ Requires PHP CLI 8.1 or greater, and of course an instance of the [Reflect socke
 
    ```
    cd reflect-client-php
-   php client <socket_file> <endpoint> <http_method> [payload]
+   php client <url_or_socket_file_path> <endpoint> <http_method> [payload]
    ```
