@@ -86,6 +86,7 @@
                 ],
                 "ssl" => [
                     "verify_peer"       => $this->_https_peer_verify,
+                    "verify_peer_name"  => $this->_https_peer_verify,
                     "allow_self_signed" => !$this->_https_peer_verify
                 ]
             ]);
