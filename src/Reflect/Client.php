@@ -62,7 +62,7 @@
 
             // Append Authentication header if API key is provided
             if (!empty($this->_key)) {
-                $headers[] = "Applications: Bearar {$this->_key}";
+                $headers[] = "Authorization: Bearer {$this->_key}";
             }
 
             // Append new line chars to each header
