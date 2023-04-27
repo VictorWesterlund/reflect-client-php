@@ -13,47 +13,61 @@
     }
 
     // Supported connection methods
-    enum ConType {
+    enum Connection {
         case HTTP;
         case AF_UNIX;
     }
 
     class Client {
-        public function __construct(string $endpoint, string $key = null, ConType $con = null) {
-            $this->_con = $con ?: $this::resolve_contype($endpoint);
+        // Use this HTTP method if no method specified to call()
+        const HTTP_DEFAULT_METHOD = Method::GET;
+
+        public function __construct(string $endpoint, string $key = null, Connection $con = null) {
+            $this->_con = $con ?: $this::resolve_connection($endpoint);
             $this->_endpoint = $endpoint;
             $this->_key = $key;
 
             // Initialize socket
-            if ($this->_con === ConType::AF_UNIX) {
+            if ($this->_con === Connection::AF_UNIX) {
                 $this->_socket = socket_create(AF_UNIX, SOCK_STREAM, 0);
                 $conn = socket_connect($this->_socket, $this->_endpoint);
             }
         }
 
         // Resolve connection type from endpoint string.
-        // If the string is a valid URL we will treat it as HTTP otherwise we will
-        // assume it's a path on disk to a UNIX socket file.
-        private static function resolve_contype(string $endpoint): ConType {
+        // If the string is a valid URL we will treat it as HTTP otherwise we will assume it's a path on disk to a UNIX socket file.
+        private static function resolve_connection(string $endpoint): Connection {
             return filter_var($endpoint, FILTER_VALIDATE_URL) 
-                ? ConType::HTTP 
-                : ConType::AF_UNIX;
+                ? Connection::HTTP 
+                : Connection::AF_UNIX;
+        }
+
+        // Attempt to resolve Method from backed enum string, or return default
+        private static function resolve_method(string $method): Method {
+            return ($method instanceof Method) 
+                ? $method
+                : Method::tryFrom($method) ?? (__CLASS__)::HTTP_DEFAULT_METHOD;
         }
 
         // Construct stream_context_create() compatible header string
         private function http_headers(): string {
             $headers = ["Content-Type: application/json"];
 
+            // Append Authentication header if API key is provided
             if (!empty($this->_key)) {
                 $headers[] = "Applications: Bearar {$this->_key}";
             }
 
+            // Append new line chars to each header
             $headers = array_map(fn($header): string => $header . "\r\n", $headers);
             return implode("", $headers);
         }
 
         // Make request and return response over HTTP
-        private function http_call(string $endpoint, Method $method, array $payload = null): array {
+        private function http_call(string $endpoint, Method|string $method = (__CLASS__)::HTTP_DEFAULT_METHOD, array $payload = null): array {
+            // Resolve string to enum
+            $method = $this::resolve_method($method);
+
             $data = stream_context_create([
                 "http" => [
                     "header"        => $this->http_headers(),
@@ -65,9 +79,8 @@
 
             $resp = file_get_contents($this->_endpoint . $endpoint, false, $data);
 
-            // Get HTTP response code from $http_response_header which materializes out of
-            // thin air after file_get_contents(). The first header line and second word will
-            // contain the status code.
+            // Get HTTP response code from $http_response_header which materializes out of thin air after file_get_contents(). 
+            // The first header line and second word will contain the status code.
             $resp_code = (int) explode(" ", $http_response_header[0])[1];
 
             return [$resp_code, $resp];
@@ -79,7 +92,7 @@
             $rx = socket_read($this->_socket, 2024);
 
             if (!$tx || !$rx) {
-                throw new Error("Failed to complete transaction");
+                throw new \Error("Failed to complete transaction");
             }
 
             return $rx;
@@ -87,9 +100,12 @@
 
         // Create HTTP-like JSON with ["<endpoint>","<method>","[payload]"] and return
         // respone from endpoint as ["<http_status_code", "<json_encoded_response_body>"]
-        public function call(string $endpoint, Method $method, array $payload = null): array {
+        public function call(string $endpoint, Method|string $method = (__CLASS__)::HTTP_DEFAULT_METHOD, array $payload = null): array {
+            // Resolve string to enum
+            $method = $this::resolve_method($method);
+
             // Call endpoint over UNIX socket
-            if ($this->_con === ConType::AF_UNIX) {
+            if ($this->_con === Connection::AF_UNIX) {
                 return json_decode($this->_socket_txn(json_encode([
                     $endpoint,
                     $method->value,
