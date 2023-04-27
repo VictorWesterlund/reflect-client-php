@@ -27,10 +27,13 @@
             $this->_endpoint = $endpoint;
             $this->_key = $key;
 
-            // Initialize socket
             if ($this->_con === Connection::AF_UNIX) {
+                // Connect to Reflect UNIX socket
                 $this->_socket = socket_create(AF_UNIX, SOCK_STREAM, 0);
                 $conn = socket_connect($this->_socket, $this->_endpoint);
+            } else if ($this->_con === Connection::HTTP) {
+                // Append tailing "/" for HTTP if absent
+                $this->_endpoint = substr($this->_endpoint, -1) === "/" ? $this->_endpoint : $this->_endpoint . "/";
             }
         }
 
@@ -67,6 +70,8 @@
         private function http_call(string $endpoint, Method|string $method = (__CLASS__)::HTTP_DEFAULT_METHOD, array $payload = null): array {
             // Resolve string to enum
             $method = $this::resolve_method($method);
+            // Remove leading "/" if present, as it's already present in $this->_endpoint
+            $endpoint = substr($endpoint, 0, 1) !== "/" ? $endpoint : substr($endpoint, 1, strlen($endpoint) - 1);
 
             $data = stream_context_create([
                 "http" => [
