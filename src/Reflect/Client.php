@@ -43,7 +43,7 @@
         }
 
         // Attempt to resolve Method from backed enum string, or return default
-        private static function resolve_method(string $method): Method {
+        private static function resolve_method(Method|string $method): Method {
             return ($method instanceof Method) 
                 ? $method
                 : Method::tryFrom($method) ?? (__CLASS__)::HTTP_DEFAULT_METHOD;
