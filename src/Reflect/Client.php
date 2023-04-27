@@ -21,8 +21,10 @@
     class Client {
         // Use this HTTP method if no method specified to call()
         const HTTP_DEFAULT_METHOD = Method::GET;
+        // The amount of bytes to read for each chunk from socket
+        const SOCKET_READ_BYTES = 2048;
 
-        public function __construct(string $endpoint, string $key = null, Connection $con = null) {
+        public function __construct(string $endpoint, string $key = null, Connection $con = null, bool $https_peer_verify = true) {
             $this->_con = $con ?: $this::resolve_connection($endpoint);
             $this->_endpoint = $endpoint;
             $this->_key = $key;
@@ -34,6 +36,8 @@
             } else if ($this->_con === Connection::HTTP) {
                 // Append tailing "/" for HTTP if absent
                 $this->_endpoint = substr($this->_endpoint, -1) === "/" ? $this->_endpoint : $this->_endpoint . "/";
+                // Flag which enables or disables SSL peer validation (for self-signed certificates)
+                $this->_https_peer_verify = $https_peer_verify;
             }
         }
 
@@ -79,6 +83,10 @@
                     "method"        => $method->value,
                     "ignore_errors" => true,
                     "content"       => !empty($payload) ? json_encode($payload) : ""
+                ],
+                "ssl" => [
+                    "verify_peer"       => $this->_https_peer_verify,
+                    "allow_self_signed" => !$this->_https_peer_verify
                 ]
             ]);
 
@@ -94,7 +102,7 @@
         // Make request and return response over socket
         private function socket_txn(string $payload): string {
             $tx = socket_write($this->_socket, $payload, strlen($payload));
-            $rx = socket_read($this->_socket, 2024);
+            $rx = socket_read($this->_socket, $this::SOCKET_READ_BYTES);
 
             if (!$tx || !$rx) {
                 throw new \Error("Failed to complete transaction");
