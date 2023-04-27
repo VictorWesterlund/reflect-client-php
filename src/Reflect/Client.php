@@ -19,14 +19,15 @@
     }
 
     class Client {
-        public function __construct(string $endpoint, ConType $con = null) {
+        public function __construct(string $endpoint, string $key = null, ConType $con = null) {
             $this->_con = $con ?: $this::resolve_contype($endpoint);
             $this->_endpoint = $endpoint;
+            $this->_key = $key;
 
-            // Initialize socket properties
+            // Initialize socket
             if ($this->_con === ConType::AF_UNIX) {
-                $this->socket = socket_create(AF_UNIX, SOCK_STREAM, 0);
-                $conn = socket_connect($this->socket, $this->_endpoint);
+                $this->_socket = socket_create(AF_UNIX, SOCK_STREAM, 0);
+                $conn = socket_connect($this->_socket, $this->_endpoint);
             }
         }
 
@@ -39,11 +40,23 @@
                 : ConType::AF_UNIX;
         }
 
+        // Construct stream_context_create() compatible header string
+        private function http_headers(): string {
+            $headers = ["Content-Type: application/json"];
+
+            if (!empty($this->_key)) {
+                $headers[] = "Applications: Bearar {$this->_key}";
+            }
+
+            $headers = array_map(fn($header): string => $header . "\r\n", $headers);
+            return implode("", $headers);
+        }
+
         // Make request and return response over HTTP
         private function http_call(string $endpoint, Method $method, array $payload = null): array {
             $data = stream_context_create([
                 "http" => [
-                    "header"        => "Content-Type: application/json",
+                    "header"        => $this->http_headers(),
                     "method"        => $method->value,
                     "ignore_errors" => true,
                     "content"       => !empty($payload) ? json_encode($payload) : ""
@@ -62,8 +75,8 @@
 
         // Make request and return response over socket
         private function socket_txn(string $payload): string {
-            $tx = socket_write($this->socket, $payload, strlen($payload));
-            $rx = socket_read($this->socket, 2024);
+            $tx = socket_write($this->_socket, $payload, strlen($payload));
+            $rx = socket_read($this->_socket, 2024);
 
             if (!$tx || !$rx) {
                 throw new Error("Failed to complete transaction");
@@ -77,7 +90,7 @@
         public function call(string $endpoint, Method $method, array $payload = null): array {
             // Call endpoint over UNIX socket
             if ($this->_con === ConType::AF_UNIX) {
-                return json_decode($this->socket_txn(json_encode([
+                return json_decode($this->_socket_txn(json_encode([
                     $endpoint,
                     $method->value,
                     $payload
