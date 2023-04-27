@@ -9,10 +9,10 @@ Make a request with `Client->call()`. It will always return the response as an a
 - The second value is the response body
 
 ```php
-$client = new Reflect\Client("<API URL or path to UNIX socket>");
+$client = new Reflect\Client("<API URL or path to UNIX socket>", "<API key (optional)>");
 
-$client->call("foo", Method::GET); // (array) [200, "bar"]
-$client->call("foo", Method::POST, [
+$client->call("foo", Reflect\Method::GET); // (array) [200, "bar"]
+$client->call("foo", Reflect\Method::POST, [
   "foo" => "bar"
 ]); // (array) [201, "Created"]
 
@@ -34,7 +34,7 @@ Requires PHP 8.1 or newer, and of course a Reflect API endpoint.
    ```php
    require_once "/vendor/autoload.php";
    
-   $client = new Reflect\Client("<API URL or path to UNIX socket>");
+   $client = new Reflect\Client("<API URL or path to UNIX socket>", "<API key (optional)>");
    ```
    
 3. **Make API request**
@@ -42,13 +42,13 @@ Requires PHP 8.1 or newer, and of course a Reflect API endpoint.
    Use the `call()` method to perform a request
    
    ```php
-   $client->call("foo?bar=baz", Method::GET);
+   $client->call("foo?bar=baz", Reflect\Method::GET);
    ```
    
    Argument index|Type|Required|Description
    --|--|--|--
    0|String|Yes|Fully qualified pathname and query params of the endpoint to call
-   1|Method|Yes|A supported [Reflect HTTP method](https://github.com/VictorWesterlund/reflect/wiki/Supported-technologies#http-request-methods) (eg. `Method::GET`)
+   1|Method\|string|Yes|A supported [Reflect HTTP method](https://github.com/VictorWesterlund/reflect/wiki/Supported-technologies#http-request-methods) (eg. `Method::GET`) or a string represnetation of a supported method (eg. "GET")
    2|Array|No|An optional indexed, associative, or multidimensional array that will be sent as the request body as `Content-Type: application/json`
    
    The `call()` function will return an array of length 2 wil the following information
@@ -86,6 +86,6 @@ Requires PHP CLI 8.1 or greater, and of course a Reflect API endpoint.
 2. **Run from command line**
 
    ```
-   cd reflect-client-php
+   // From the root directory of this project
    php client <url_or_socket_file_path> <endpoint> <http_method> [payload]
    ```
