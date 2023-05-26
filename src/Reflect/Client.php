@@ -120,7 +120,7 @@
 
             // Call endpoint over UNIX socket
             if ($this->_con === Connection::AF_UNIX) {
-                return json_decode($this->_socket_txn(json_encode([
+                return json_decode($this->socket_txn(json_encode([
                     $endpoint,
                     $method->value,
                     $payload
