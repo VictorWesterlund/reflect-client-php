@@ -98,7 +98,7 @@
             $resp_code = (int) explode(" ", $http_response_header[0])[1];
 
             // Return response as [<http_status_code>, <resp_body_assoc_array>]
-            return [$resp_code, json_decode($resp)];
+            return [$resp_code, json_decode($resp, true)];
         }
 
         // Make request and return response over socket
