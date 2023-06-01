@@ -97,7 +97,8 @@
             // The first header line and second word will contain the status code.
             $resp_code = (int) explode(" ", $http_response_header[0])[1];
 
-            return [$resp_code, $resp];
+            // Return response as [<http_status_code>, <resp_body_assoc_array>]
+            return [$resp_code, json_decode($resp)];
         }
 
         // Make request and return response over socket
