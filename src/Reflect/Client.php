@@ -97,7 +97,8 @@
             // The first header line and second word will contain the status code.
             $resp_code = (int) explode(" ", $http_response_header[0])[1];
 
-            return [$resp_code, $resp];
+            // Return response as [<http_status_code>, <resp_body_assoc_array>]
+            return [$resp_code, json_decode($resp)];
         }
 
         // Make request and return response over socket
@@ -112,19 +113,22 @@
             return $rx;
         }
 
-        // Create HTTP-like JSON with ["<endpoint>","<method>","[payload]"] and return
-        // respone from endpoint as ["<http_status_code", "<json_encoded_response_body>"]
+        // Call a Reflect endpoint and return response as assoc array
         public function call(string $endpoint, Method|string $method = (__CLASS__)::HTTP_DEFAULT_METHOD, array $payload = null): array {
             // Resolve string to enum
             $method = $this::resolve_method($method);
 
             // Call endpoint over UNIX socket
             if ($this->_con === Connection::AF_UNIX) {
-                return json_decode($this->socket_txn(json_encode([
-                    $endpoint,
-                    $method->value,
-                    $payload
-                ])));
+                // Return response as assoc array
+                return json_decode($this->socket_txn(
+                    // Send request as stringified JSON
+                    json_encode([
+                        $endpoint,
+                        $method->value,
+                        $payload
+                    ])
+                ), true);
             }
 
             // Call endpoint over HTTP
