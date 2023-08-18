@@ -19,25 +19,37 @@
     }
 
     class Client {
+        // API key string
+        private ?string $key;
+        // Connection method
+        private Connection $con;
+        // Request endpoitn string
+        private string $endpoint;
+
+        // Socket instance
+        private Socket|false $socket = false;
+        // Flag: Allow unverified SSL certificates for HTTPS
+        private bool $https_peer_verify = true;
+
         // Use this HTTP method if no method specified to call()
         const HTTP_DEFAULT_METHOD = Method::GET;
         // The amount of bytes to read for each chunk from socket
         const SOCKET_READ_BYTES = 2048;
 
         public function __construct(string $endpoint, string $key = null, Connection $con = null, bool $https_peer_verify = true) {
-            $this->_con = $con ?: $this::resolve_connection($endpoint);
-            $this->_endpoint = $endpoint;
-            $this->_key = $key;
+            $this->con = $con ?: $this::resolve_connection($endpoint);
+            $this->endpoint = $endpoint;
+            $this->key = $key;
 
-            if ($this->_con === Connection::AF_UNIX) {
+            if ($this->con === Connection::AF_UNIX) {
                 // Connect to Reflect UNIX socket
                 $this->_socket = socket_create(AF_UNIX, SOCK_STREAM, 0);
-                $conn = socket_connect($this->_socket, $this->_endpoint);
-            } else if ($this->_con === Connection::HTTP) {
+                $conn = socket_connect($this->_socket, $this->endpoint);
+            } else if ($this->con === Connection::HTTP) {
                 // Append tailing "/" for HTTP if absent
-                $this->_endpoint = substr($this->_endpoint, -1) === "/" ? $this->_endpoint : $this->_endpoint . "/";
+                $this->endpoint = substr($this->endpoint, -1) === "/" ? $this->endpoint : $this->endpoint . "/";
                 // Flag which enables or disables SSL peer validation (for self-signed certificates)
-                $this->_https_peer_verify = $https_peer_verify;
+                $this->https_peer_verify = $https_peer_verify;
             }
         }
 
@@ -61,8 +73,8 @@
             $headers = ["Content-Type: application/json"];
 
             // Append Authentication header if API key is provided
-            if (!empty($this->_key)) {
-                $headers[] = "Authorization: Bearer {$this->_key}";
+            if (!empty($this->key)) {
+                $headers[] = "Authorization: Bearer {$this->key}";
             }
 
             // Append new line chars to each header
@@ -74,7 +86,7 @@
         private function http_call(string $endpoint, Method|string $method = (__CLASS__)::HTTP_DEFAULT_METHOD, array $payload = null): array {
             // Resolve string to enum
             $method = $this::resolve_method($method);
-            // Remove leading "/" if present, as it's already present in $this->_endpoint
+            // Remove leading "/" if present, as it's already present in $this->endpoint
             $endpoint = substr($endpoint, 0, 1) !== "/" ? $endpoint : substr($endpoint, 1, strlen($endpoint) - 1);
 
             $data = stream_context_create([
@@ -85,13 +97,13 @@
                     "content"       => !empty($payload) ? json_encode($payload) : ""
                 ],
                 "ssl" => [
-                    "verify_peer"       => $this->_https_peer_verify,
-                    "verify_peer_name"  => $this->_https_peer_verify,
-                    "allow_self_signed" => !$this->_https_peer_verify
+                    "verify_peer"       => $this->https_peer_verify,
+                    "verify_peer_name"  => $this->https_peer_verify,
+                    "allow_self_signed" => !$this->https_peer_verify
                 ]
             ]);
 
-            $resp = file_get_contents($this->_endpoint . $endpoint, false, $data);
+            $resp = file_get_contents($this->endpoint . $endpoint, false, $data);
 
             // Get HTTP response code from $http_response_header which materializes out of thin air after file_get_contents(). 
             // The first header line and second word will contain the status code.
@@ -119,7 +131,7 @@
             $method = $this::resolve_method($method);
 
             // Call endpoint over UNIX socket
-            if ($this->_con === Connection::AF_UNIX) {
+            if ($this->con === Connection::AF_UNIX) {
                 // Return response as assoc array
                 return json_decode($this->socket_txn(
                     // Send request as stringified JSON
