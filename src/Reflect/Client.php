@@ -2,15 +2,11 @@
 
     namespace Reflect;
 
-    // Allowed HTTP verbs
-    enum Method: string {
-        case GET     = "GET";
-        case POST    = "POST";
-        case PUT     = "PUT";
-        case DELETE  = "DELETE";
-        case PATCH   = "PATCH";
-        case OPTIONS = "OPTIONS";
-    }
+    use Reflect\Method;
+    use Reflect\Response;
+
+    require_once "Method.php";
+    require_once "Response.php";
 
     // Supported connection methods
     enum Connection {
@@ -37,7 +33,7 @@
         const SOCKET_READ_BYTES = 2048;
 
         public function __construct(string $endpoint, string $key = null, Connection $con = null, bool $https_peer_verify = true) {
-            $this->con = $con ?: $this::resolve_connection($endpoint);
+            $this->con = $con ?: self::resolve_connection($endpoint);
             $this->endpoint = $endpoint;
             $this->key = $key;
 
@@ -65,7 +61,7 @@
         private static function resolve_method(Method|string $method): Method {
             return ($method instanceof Method) 
                 ? $method
-                : Method::tryFrom($method) ?? (__CLASS__)::HTTP_DEFAULT_METHOD;
+                : Method::tryFrom($method) ?? self::HTTP_DEFAULT_METHOD;
         }
 
         // Construct stream_context_create() compatible header string
@@ -83,9 +79,9 @@
         }
 
         // Make request and return response over HTTP
-        private function http_call(string $endpoint, Method|string $method = (__CLASS__)::HTTP_DEFAULT_METHOD, array $payload = null): array {
+        private function http_call(string $endpoint, Method|string $method = self::HTTP_DEFAULT_METHOD, array $payload = null): array {
             // Resolve string to enum
-            $method = $this::resolve_method($method);
+            $method = self::resolve_method($method);
             // Remove leading "/" if present, as it's already present in $this->endpoint
             $endpoint = substr($endpoint, 0, 1) !== "/" ? $endpoint : substr($endpoint, 1, strlen($endpoint) - 1);
 
@@ -110,13 +106,13 @@
             $resp_code = (int) explode(" ", $http_response_header[0])[1];
 
             // Return response as [<http_status_code>, <resp_body_assoc_array>]
-            return [$resp_code, json_decode($resp, true)];
+            return [$resp_code, $resp];
         }
 
         // Make request and return response over socket
         private function socket_txn(string $payload): string {
             $tx = socket_write($this->_socket, $payload, strlen($payload));
-            $rx = socket_read($this->_socket, $this::SOCKET_READ_BYTES);
+            $rx = socket_read($this->_socket, self::SOCKET_READ_BYTES);
 
             if (!$tx || !$rx) {
                 throw new \Error("Failed to complete transaction");
@@ -126,9 +122,9 @@
         }
 
         // Call a Reflect endpoint and return response as assoc array
-        public function call(string $endpoint, Method|string $method = (__CLASS__)::HTTP_DEFAULT_METHOD, array $payload = null): array {
+        public function call(string $endpoint, Method|string $method = self::HTTP_DEFAULT_METHOD, array $payload = null): Response {
             // Resolve string to enum
-            $method = $this::resolve_method($method);
+            $method = self::resolve_method($method);
 
             // Call endpoint over UNIX socket
             if ($this->con === Connection::AF_UNIX) {
@@ -144,6 +140,6 @@
             }
 
             // Call endpoint over HTTP
-            return $this->http_call(...func_get_args());
+            return new Response($this->http_call(...func_get_args()));
         }
     }
