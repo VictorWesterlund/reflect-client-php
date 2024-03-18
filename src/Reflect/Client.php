@@ -52,7 +52,7 @@
             $context = stream_context_create([
                 "http" => [
                     "header"        => $this->http_headers(),
-                    "method"        => $method->value,
+                    "method"        => $method->name,
                     "ignore_errors" => true,
                     "content"       => !empty($payload) ? json_encode($payload) : ""
                 ],
