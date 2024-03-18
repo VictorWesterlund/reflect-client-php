@@ -9,9 +9,12 @@
     require_once "Response.php";
 
     class Client {
-        private ?string $key;
-        private string $base_url;
-        private bool $https_verify_peer;
+        protected ?string $key;
+        protected string $base_url;
+        protected bool $https_verify_peer;
+
+        protected string $endpoint;
+        protected string $params;
             
         public function __construct(string $base_url, string $key = null, bool $verify_peer = true) {
             // Optional API key
@@ -45,13 +48,8 @@
         }
 
         // Make request and return response over HTTP
-        private function http_call(string $endpoint, Method|string $method = self::HTTP_DEFAULT_METHOD, array $payload = null): array {
-            // Resolve string to enum
-            $method = self::resolve_method($method);
-            // Remove leading "/" if present, as it's already present in $this->endpoint
-            $endpoint = substr($endpoint, 0, 1) !== "/" ? $endpoint : substr($endpoint, 1, strlen($endpoint) - 1);
-
-            $data = stream_context_create([
+        private function http_call(Method $method, array $payload = null): array {
+            $context = stream_context_create([
                 "http" => [
                     "header"        => $this->http_headers(),
                     "method"        => $method->value,
@@ -65,41 +63,57 @@
                 ]
             ]);
 
-            $resp = file_get_contents($this->endpoint . $endpoint, false, $data);
+            $resp = file_get_contents($this->base_url . $this->endpoint, false, $context);
 
             // Get HTTP response code from $http_response_header which materializes out of thin air after file_get_contents(). 
             // The first header line and second word will contain the status code.
             $resp_code = (int) explode(" ", $http_response_header[0])[1];
 
-            // Return response as [<http_status_code>, <resp_body_assoc_array>]
+            // Return response as [<resp_body_assoc_array>, <http_status_code>]
             return [$resp, $resp_code];
         }
 
         // ----
 
+        // Construct URL search parameters from array if set
+        public function params(?array $params = null): self {
+            $this->params = !empty($params) ? self::get_params($params) : "";
+            return $this;
+        }
+
+        // Create a new call to an endpoint
+        public function call(string $endpoint): self {
+            // Remove leading "/" if present, as it's already present in $this->base_url
+            $this->endpoint = substr($this->endpoint, 0, 1) !== "/" 
+                ? $this->endpoint 
+                : substr($this->endpoint, 1, strlen($this->endpoint) - 1);
+
+            // Reset search parameters
+            $this->params();
+
+            return $this;
+        }
+
+        // ----
+
         // Make a GET request to endpoint with optional search parameters
-        public function get(string $endpoint, array $params = []): Response {
-            $resp = $this->http_call($endpoint . self::get_params($params), Method::GET);
-            return new Response(...$resp);
+        public function get(): Response {
+            return new Response(...$this->http_call(Method::GET));
         }
 
-        public function patch(string $endpoint, array $params, array $payload): Response {
-            $resp = $this->http_call($endpoint . self::get_params($params), Method::PATCH, $payload);
-            return new Response(...$resp);
+        public function patch(array $payload): Response {
+            return new Response(...$this->http_call(Method::PATCH, $payload));
         }
 
-        public function put(string $endpoint, array $params, array $payload): Response {
-            $resp = $this->http_call($endpoint . self::get_params($params), Method::PUT, $payload);
-            return new Response(...$resp);
+        public function put(array $payload): Response {
+            return new Response(...$this->http_call(Method::PUT, $payload));
         }
 
-        public function post(string $endpoint, array $params, array $payload): Response {
-            $resp = $this->http_call($endpoint . self::get_params($params), Method::POST, $payload);
-            return new Response(...$resp);
+        public function post(array $payload): Response {
+            return new Response(...$this->http_call(Method::POST, $payload));
         }
 
-        public function delete(string $endpoint, array $params, ?array $payload = []): Response {
-            $resp = $this->http_call($endpoint . self::get_params($params), Method::POST, $payload);
-            return new Response(...$resp);
+        public function delete(?array $payload = []): Response {
+            return new Response(...$this->http_call(Method::DELETE, $payload));
         }
     }
