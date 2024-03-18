@@ -3,21 +3,19 @@
 	namespace Reflect;
 
 	class Response {
-		public int $status;
+		public int $code;
 		public bool $ok = false;
 		
 		private mixed $body;
 
-		public function __construct(array $response) {
-			// Pass response array into properties
-			[$this->status, $this->body] = $response;
+		public function __construct(string|array $resp, int $code = 200) {
+			// Get response body from array or directly from string
+			$this->body = is_array($resp) ? $resp[0] : $resp;
+			// Set response code from array or with method argument
+			$this->code = is_array($resp) ? (int) $resp[1] : $code;
 
-			$this->ok = $this->is_ok();
-		}
-
-		// A boolean indicating whether the response was successful (status in the range 200 – 299) or not
-		public function is_ok(): bool {
-			return $this->status >= 200 && $this->status < 300;
+			// Response code is within the Success range
+			$this->ok = $this->code >= 200 && $this->code < 300;
 		}
 
 		// Parse JSON from response body and return as PHP array
@@ -26,7 +24,7 @@
 		}
 
 		// Return response body as-is
-		public function text() {
+		public function output() {
 			return $this->body;
 		}
 	}
