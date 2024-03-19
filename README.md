@@ -1,91 +1,139 @@
 # Reflect API client for PHP
 
-Make requests to an API built using the [Reflect API](https://github.com/VictorWesterlund/reflect) framework over HTTP or UNIX sockets. This program comes with both an extendable/instantiable class that you can integrate with existing PHP code, or as a stand-alone CLI which can be run by itself or UNIX piped into other programs.
+Make requests from a PHP application to an API built with the [Reflect API framework](https://github.com/VictorWesterlund/reflect).
 
----
-
-Make a request with `Client->call()`. It will always return the response as an array of length 2.
-- The first value is the HTTP-equivalent response code.
-- The second value is the response body
-
-```php
-$client = new Reflect\Client("<API URL or path to UNIX socket>", "<API key (optional)>");
-
-$client->call("foo", Reflect\Method::GET); // (array) [200, "bar"]
-$client->call("foo", Reflect\Method::POST, [
-  "foo" => "bar"
-]); // (array) [201, "Created"]
-
-// etc..
-```
-
-## How to use
-
-Requires PHP 8.1 or newer, and of course a Reflect API endpoint.
+## Installation
 
 1. **Install with composer**
-
-   ```
-   composer require reflect/client
-   ```
-   
-2. **Initialize the class**
-
-   ```php
-   require_once "/vendor/autoload.php";
-   
-   $client = new Reflect\Client("<API URL or path to UNIX socket>", "<API key (optional)>");
-   ```
-   
-3. **Make API request**
-
-   Use the `call()` method to perform a request
-   
-   ```php
-   $client->call("foo?bar=baz", Reflect\Method::GET);
-   ```
-   
-   Argument index|Type|Required|Description
-   --|--|--|--
-   0|String|Yes|Fully qualified pathname and query params of the endpoint to call
-   1|Method\|string|Yes|A supported [Reflect HTTP method](https://github.com/VictorWesterlund/reflect/wiki/Supported-technologies#http-request-methods) (eg. `Method::GET`) or a string represnetation of a supported method (eg. "GET")
-   2|Array|No|An optional indexed, associative, or multidimensional array that will be sent as the request body as `Content-Type: application/json`
-   
-   The `call()` function will return an array of length 2 wil the following information
-   
-   Index|Type|Description
-   --|--|--
-   0|Int|HTTP-equivalent response code (eg. `200` or `404`)
-   1|String/Array|Contains the response body as either a string, or array if the response `Content-Type` header is `application/json`
-   
-## How to use (CLI)
-
-You can also run this from the command line with
-
 ```
-php client <socket_file> <endpoint> <http_method> [payload]
+composer require reflect/client
 ```
 
-and it will return a serialized JSON array with the same structure as described in the `Client->call()` return.
+2. **`use` in your PHP code**
+```php
+use Reflect\Client;
 
-*Example*
-```sh
-php client "/run/reflect.sock" "foo?bar=biz" "POST" "[\"foo\" => \"bar\"]" # (string) [201, \"Created\"]
+$client = new Client(string $api_base_url, ?string $api_key, ?bool $verify_peer = true);
 ```
 
----
+## Making API calls
 
-Requires PHP CLI 8.1 or greater, and of course a Reflect API endpoint.
+Start by initializing the `Client` with a base URL to the API, and with an optional API key.
 
-1. **Clone repo**
+```php
+use Reflect\Client;
+use Reflect\Method;
 
-   ```
-   git clone https://github.com/victorwesterlund/reflect-client-php
-   ```
-   
-2. **Run from command line**
+$client = new Client("https://api.example.com", "MyApiKey");
+```
 
-   ```
-   // From the root directory of this project
-   php client <url_or_socket_file_path> <endpoint> <http_method> [payload]
-   ```
+### Defining an endpoint
+
+Start a new API call by chaining the `call()` method and passing it an endpoint string
+
+```php
+Client->call(string $endpoint): self
+```
+
+Example:
+
+```php
+$client->call("my/endpoint");
+```
+
+### (Optional) Search Parameters
+
+Pass an associative array of keys and values to `params()`, and chain it anywhere before a `get()`, `patch()`, `put()`, `post()`, or `delete()` request to set search (`$_GET`) parameters for the current request.
+
+```php
+Client->params(?array $params = null): self
+```
+
+Example:
+
+```php
+// https://api.example.com/my/endpoint?key1=value1&key2=value2
+$client->call("my/endpoint")
+  ->params([
+    "key1" => "value1",
+    "key2" => "value2"
+  ]);
+```
+
+### `GET` Request
+
+Make a `GET` request by chaining `get()` at the end of a method chain. This method will return a `Reflect\Response` object.
+
+```php
+Client->get(): Reflect\Response;
+```
+
+Example:
+
+```php
+$client->call("my/endpoint")->params(["foo" => "bar"])->get();
+```
+
+### `POST` Request
+
+Make a `POST` request by chaining `post()` at the end of a method chain. This method will return a `Reflect\Response` object.
+
+Pass `post()` a stringifiable associative array of key, value pairs to be sent as an `application/json`-encoded request body to the endpoint.
+
+```php
+Client->post(array $payload): Reflect\Response;
+```
+
+Example:
+
+```php
+$client->call("my/endpoint")->params(["foo" => "bar"])->post(["baz" => "qux"]);
+```
+
+### `PATCH` Request
+
+Make a `PATCH` request by chaining `patch()` at the end of a method chain. This method will return a `Reflect\Response` object.
+
+Pass `patch()` a stringifiable associative array of key, value pairs to be sent as an `application/json`-encoded request body to the endpoint.
+
+```php
+Client->patch(array $payload): Reflect\Response;
+```
+
+Example:
+
+```php
+$client->call("my/endpoint")->params(["foo" => "bar"])->patch(["baz" => "qux"]);
+```
+
+### `PUT` Request
+
+Make a `PUT` request by chaining `put()` at the end of a method chain. This method will return a `Reflect\Response` object.
+
+Pass `put()` a stringifiable associative array of key, value pairs to be sent as an `application/json`-encoded request body to the endpoint.
+
+```php
+Client->put(array $payload): Reflect\Response;
+```
+
+Example:
+
+```php
+$client->call("my/endpoint")->params(["foo" => "bar"])->put(["baz" => "qux"]);
+```
+
+### `DELETE` Request
+
+Make a `DELETE` request by chaining `delete()` at the end of a method chain. This method will return a `Reflect\Response` object.
+
+Pass `delete()` an optional stringifiable associative array of key, value pairs to be sent as an `application/json`-encoded request body to the endpoint.
+
+```php
+Client->delete(?array $payload = null): Reflect\Response;
+```
+
+Example:
+
+```php
+$client->call("my/endpoint")->params(["foo" => "bar"])->delete();
+```
