@@ -21,7 +21,7 @@
             $this->key = $key;
 
             // Append tailing "/" if absent
-            $this->base_url = substr($this->base_url, -1) === "/" ? $this->base_url : $this->base_url . "/";
+            $this->base_url = substr($base_url, -1) === "/" ? $base_url : $base_url . "/";
             // Flag which enables or disables SSL peer validation (for self-signed certificates)
             $this->https_verify_peer = $verify_peer;
         }
@@ -84,9 +84,9 @@
         // Create a new call to an endpoint
         public function call(string $endpoint): self {
             // Remove leading "/" if present, as it's already present in $this->base_url
-            $this->endpoint = substr($this->endpoint, 0, 1) !== "/" 
-                ? $this->endpoint 
-                : substr($this->endpoint, 1, strlen($this->endpoint) - 1);
+            $this->endpoint = substr($endpoint, 0, 1) !== "/" 
+                ? $endpoint 
+                : substr($endpoint, 1, strlen($endpoint) - 1);
 
             // Reset search parameters
             $this->params();
