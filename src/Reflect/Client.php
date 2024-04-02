@@ -63,7 +63,7 @@
                 ]
             ]);
 
-            $resp = file_get_contents($this->base_url . $this->endpoint, false, $context);
+            $resp = file_get_contents(implode("", [$this->base_url, $this->endpoint, $this->params]), false, $context);
 
             // Get HTTP response code from $http_response_header which materializes out of thin air after file_get_contents(). 
             // The first header line and second word will contain the status code.
