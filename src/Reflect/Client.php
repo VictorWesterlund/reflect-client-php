@@ -101,15 +101,15 @@
             return new Response(...$this->http_call(Method::GET));
         }
 
-        public function patch(array $payload): Response {
+        public function patch(?array $payload = []): Response {
             return new Response(...$this->http_call(Method::PATCH, $payload));
         }
 
-        public function put(array $payload): Response {
+        public function put(?array $payload = []): Response {
             return new Response(...$this->http_call(Method::PUT, $payload));
         }
 
-        public function post(array $payload): Response {
+        public function post(?array $payload = []): Response {
             return new Response(...$this->http_call(Method::POST, $payload));
         }
 
