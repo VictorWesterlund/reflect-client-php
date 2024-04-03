@@ -135,7 +135,6 @@
 
         public function delete(?array $payload = []): Response {
             $this->set_request_body($payload);
-            print_r($this->headers);
             return new Response(...$this->http_call(Method::DELETE));
         }
     }
