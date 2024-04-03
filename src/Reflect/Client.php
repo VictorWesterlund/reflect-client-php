@@ -9,15 +9,17 @@
     require_once "Response.php";
 
     class Client {
+        private string $params;
+        private string $endpoint;
+        private array $headers = [];
+        private ?array $payload = null;
+
         protected ?string $key;
         protected string $base_url;
         protected bool $https_verify_peer;
-
-        protected string $endpoint;
-        protected string $params;
             
         public function __construct(string $base_url, string $key = null, bool $verify_peer = true) {
-            // Optional API key
+            // Set optional API key and Authorization header
             $this->key = $key;
 
             // Append tailing "/" if absent
@@ -34,27 +36,26 @@
         // ----
 
         // Construct stream_context_create() compatible header string
-        private function http_headers(): string {
-            $headers = ["Content-Type: application/json"];
-
-            // Append Authentication header if API key is provided
-            if (!empty($this->key)) {
-                $headers[] = "Authorization: Bearer {$this->key}";
+        private function get_headers(): string {
+            // Set Authorization header if an API key is used
+            if ($this->key) {
+                $this->headers["Authorization"] = "Bearer {$this->key}";
             }
 
-            // Append new line chars to each header
-            $headers = array_map(fn($header): string => $header . "\r\n", $headers);
+            
+            // Construct HTTP headers string from array
+            $headers = array_map(fn(string $k, string $v): string => "{$k}: {$v}\r\n", array_keys($this->headers), array_values($this->headers));
             return implode("", $headers);
         }
 
         // Make request and return response over HTTP
-        private function http_call(Method $method, array $payload = null): array {
+        private function http_call(Method $method): array {
             $context = stream_context_create([
                 "http" => [
-                    "header"        => $this->http_headers(),
+                    "header"        => $this->get_headers(),
                     "method"        => $method->name,
                     "ignore_errors" => true,
-                    "content"       => !empty($payload) ? json_encode($payload) : ""
+                    "content"       => !empty($this->payload) ? json_encode($this->payload) : ""
                 ],
                 "ssl" => [
                     "verify_peer"       => $this->https_verify_peer,
@@ -73,6 +74,20 @@
             return [$resp, $resp_code];
         }
 
+        // Set request body to be JSON-stringified
+        private function set_request_body(?array $payload = null): self {
+            // Unset request body if no payload defined
+            if (empty($payload)) {
+                $this->payload = null;
+                return $this;
+            }
+
+            $this->headers["Content-Type"] = "application/json";
+
+            $this->payload = $payload;
+            return $this;
+        }
+
         // ----
 
         // Construct URL search parameters from array if set
@@ -88,8 +103,10 @@
                 ? $endpoint 
                 : substr($endpoint, 1, strlen($endpoint) - 1);
 
-            // Reset search parameters
+            // Reset initial values
             $this->params();
+            $this->headers = [];
+            $this->set_request_body();
 
             return $this;
         }
@@ -102,18 +119,23 @@
         }
 
         public function patch(?array $payload = []): Response {
-            return new Response(...$this->http_call(Method::PATCH, $payload));
+            $this->set_request_body($payload);
+            return new Response(...$this->http_call(Method::PATCH));
         }
 
         public function put(?array $payload = []): Response {
-            return new Response(...$this->http_call(Method::PUT, $payload));
+            $this->set_request_body($payload);
+            return new Response(...$this->http_call(Method::PUT));
         }
 
         public function post(?array $payload = []): Response {
-            return new Response(...$this->http_call(Method::POST, $payload));
+            $this->set_request_body($payload);
+            return new Response(...$this->http_call(Method::POST));
         }
 
         public function delete(?array $payload = []): Response {
-            return new Response(...$this->http_call(Method::DELETE, $payload));
+            $this->set_request_body($payload);
+            print_r($this->headers);
+            return new Response(...$this->http_call(Method::DELETE));
         }
     }
