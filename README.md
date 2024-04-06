@@ -137,3 +137,19 @@ Example:
 ```php
 $client->call("my/endpoint")->params(["foo" => "bar"])->delete();
 ```
+
+### `OPTIONS` Request
+
+Make an `OPTIONS` request by chaining `options()` at the end of a method chain. This method will return a `Reflect\Response` object.
+
+Use this method to query Reflect for available request methods.
+
+```php
+Client->options(): Reflect\Response;
+```
+
+Example:
+
+```php
+$client->call("my/endpoint"))->options();
+```
