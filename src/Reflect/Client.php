@@ -41,7 +41,6 @@
             if ($this->key) {
                 $this->headers["Authorization"] = "Bearer {$this->key}";
             }
-
             
             // Construct HTTP headers string from array
             $headers = array_map(fn(string $k, string $v): string => "{$k}: {$v}\r\n", array_keys($this->headers), array_values($this->headers));
@@ -136,5 +135,9 @@
         public function delete(?array $payload = []): Response {
             $this->set_request_body($payload);
             return new Response(...$this->http_call(Method::DELETE));
+        }
+
+        public function options(): Response {
+            return new Response(...$this->http_call(Method::OPTIONS));
         }
     }
